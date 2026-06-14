@@ -1,110 +1,168 @@
 // Đồ thị có hướng
+// Trường hợp 1. T == 1
+// Euler:
+// G liên thông yếu trên các đỉnh có bậc > 0 và mọi đỉnh u có:
+//      in[u] == out[u]
 
-#include <iostream>
+// Nửa Euler:
+// G liên thông yếu trên các đỉnh có bậc > 0 và tồn tại đúng:
+//      1 đỉnh start: out[u] - in[u] == 1
+//      1 đỉnh end:   in[u] - out[u] == 1
+// các đỉnh còn lại:
+//      in[u] == out[u]
+
+// Nếu mọi đỉnh đều có in[u] == out[u]:
+// G là Euler, không phải chỉ là Nửa Euler
+
+// Thuật toán:
+// Nhập ma trận, if(matrix[i][j]) adj[i].push(j), adj[j].push(j), outdeg[i] += 1, indeg[j] += 1
+// DFS(u), kiểm tra số lượng đỉnh duyệt có bằng n không
+// Nếu số lượng đỉnh duyệt bằng n -> Liên thông yếu -> Kiểm tra Euler, Không Euler
+
+
+// Trường hợp 1. T == 1
+// Thuật toán:
+// root == -1
+// for i = 0 -> n-1: if indeg[i] + outdeg[i] > 0: root = i; break
+// if root == -1: cout << 0; return 0
+// for i = 0 -> n-1: if indeg[i] + outdeg[i] > 0 && !visited[i]: cout << 0; return 0
+// start = 0, end = 0
+// for i = 0 -> n-1:
+//      if(indeg[i] == outdeg[i]) continue
+//      else if(outdeg[i] - indeg[i] == 1) start +=1
+//      else if(indeg[i] - outdeg[i] == 1) end += 1
+//      else cout << 0; return 0
+// if start == end == 0: cout << 1
+// if start == end == 1: cout << 2
+// else cout << 0 
+
+
+// Trường hợp 2. T == 2
+// Tìm đường đi, chu trình Euler
+// Thuật toán:
+//      1. Đưa start vào stack
+//      2. While stack != empty:
+//              u = stack.top, v = -1
+//              for i = 0; i < n; i ++: if(matrix[u][v]) v = i; break
+//              if u != -1: stack.push(v), matrix[u][v] = 0;
+//              else: cycle.push_back(u); stack.pop()
+//      3. Đảo ngược cycle & xuất
+
 #include <vector>
+#include <iostream>
+#include <algorithm>
 #include <stack>
 using namespace std;
 
 int t, n, u;
+vector<vector<int>> matrix(1005, vector<int>(1005, 0));
+vector<bool> visited(1000, false);
+vector<int> adj[1000];
+vector<int> indeg(1000), outdeg(1000);
 
-int edge_id = 0;
-vector<pair<int, int>> adj[1005]; // <v, id cạnh uv>
-bool used[1000005];
+void dfs(int u) {
+    visited[u] = true;
+    for(int v : adj[u]) {
+        if(!visited[v]) {
+            dfs(v);
+        }
+    }
+}
 
-int in[1005], out[1005];
-
-vector<int> EulerCycle(int start) {
+void EulerCycle(int start) {
     stack<int> st;
-    vector<int> path;
+    vector<int> cycle;
     st.push(start);
 
     while(!st.empty()) {
-        // Lấy đỉnh u trên cùng
-        int u = st.top();
+        int u = st.top(), v = -1;
 
-        // Xóa các cạnh đã dùng ra khỏi danh sách kề
-        // Duyệt, loại bỏ từng đỉnh ở cuối danh sách kề về đầu
-        while(!adj[u].empty() && used[adj[u].back().second]) {
-            adj[u].pop_back();
+        for(int i = 0; i < n; i ++) {
+            if(matrix[u][i]) {
+                v = i;
+                break;
+            }
         }
 
-        // Nếu không còn cạnh để đi
-        if(adj[u].empty()) {
-            path.push_back(u);
-            st.pop();
+        if(v != -1) {
+            st.push(v);
+            matrix[u][v] = 0;
         }
         else {
-            // Lấy cạnh chưa dùng
-            auto [v, id] = adj[u].back();
-            adj[u].pop_back();
-
-            // Nếu cạnh đã dùng thì bỏ qua
-            if(used[id]) continue;
-
-            // Đánh dấu cạnh đã dùng
-            used[id] = true;
-
-            st.push(v);
+            cycle.push_back(u);
+            st.pop();
         }
     }
-    return path;
+    reverse(cycle.begin(), cycle.end());
+    for(auto x : cycle) cout << x + 1 << " "; // Do chạy từ 0 -> n -1
 }
 
-
 int main() {
-    if(!freopen("CT.INP", "r", stdin)) return 0;
-    if(!freopen("CT.OUT", "w", stdout)) return 0;
-
+    if(!freopen("CT.INP", "r", stdin));
+    if(!freopen("CT.OUT", "w", stdout));
     cin >> t >> n;
     if(t == 2) cin >> u;
 
-    for(int i = 1; i <= n; i ++) {
-        for(int j = 1; j <= n; j ++) {
-            int val;
-            cin >> val;
+    for(int i = 0; i < n; i ++) {
+        for(int j = 0; j < n; j ++) {
+            cin >> matrix[i][j];
+            if(matrix[i][j]) {
+                adj[i].push_back(j);
+                adj[j].push_back(i); // Bỏ hướng cạnh
 
-            if(val) {
-                edge_id += 1;
-                adj[i].push_back({j, edge_id});
-
-                // Tăng bán bậc ra của i
-                out[i] += 1;
-
-                // Tăng bán bậc vào của j
-                in[j] += 1;
+                indeg[j] += 1;
+                outdeg[i] += 1;
             }
         }
     }
 
-    // Kiểm tra đồ thị có hướng là Euler hay nửa Euler
     if(t == 1) {
-        // Euler: in(u) == out(u)
-        // Nửa Euler: có 1 đỉnh out(u) = in(u) + 1
-        //             có 1 đỉnh in(u) = out(u) + 1
-        //             các đỉnh còn lại in(u) == out(u)
-        // Không phải Euler hoặc nửa Euler: không thỏa mãn 2 đk trên
-        int start = 0, endd = 0;
+        int root = -1;
 
-        for(int i = 1; i <= n; i ++) {
-            if(in[i] == out[i]) continue;
-            else if(out[i] == in[i] + 1) start += 1;
-            else if(in[i] == out[i] + 1) endd += 1;
+        // Tìm đỉnh để DFS
+        for(int i = 0; i < n; i++) {
+            if(indeg[i] + outdeg[i] > 0) {
+                root = i;
+                break;
+            }
+        }
+
+        // Nếu không có đỉnh
+        if(root == -1) {
+            cout << 1;
+            return 0;
+        }
+
+        dfs(root);
+
+        // Kiểm tra đồ thị có liên thông yếu không
+        // Nếu không, xuất ra 0
+        for(int i = 0; i < n; i++) {
+            if(indeg[i] + outdeg[i] > 0 && !visited[i]) {
+                cout << 0;
+                return 0;
+            }
+        }
+
+        int start = 0, end = 0;
+
+        for(int i = 0; i < n; i++) {
+            if(indeg[i] == outdeg[i]) continue;
+            else if(outdeg[i] - indeg[i] == 1) start++;
+            else if(indeg[i] - outdeg[i] == 1) end++;
             else {
                 cout << 0;
                 return 0;
             }
         }
 
-        if(start == 0 && endd == 0) cout << 1;
-        else if(start == 1 && endd == 1) cout << 2;
+        if(start == 0 && end == 0) cout << 1;
+        else if(start == 1 && end == 1) cout << 2;
         else cout << 0;
     }
-    else {
-        vector<int> result = EulerCycle(u);
 
-        // In ngược lại vector
-        for(int i = result.size() - 1; i >= 0; i--) {
-            cout << result[i] << " ";
-        }
+    else {
+        EulerCycle(u - 1);
     }
+
 }

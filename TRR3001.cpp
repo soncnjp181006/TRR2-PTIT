@@ -1,169 +1,119 @@
 // Đồ thị vô hướng
 
-// Đồ thị vô hướng G là đồ thị Euler:
-// + Đồ thị liên thông (bỏ các đỉnh cô lập)
-// + Với mọi v thuộc V: deg(v) % 2 == 0
+// Trường hợp 1. T == 1
+// Euler: G liên thông và mọi đỉnh có bậc chẵn
+// Nửa Euler: G liên thông và tồn tại đúng 2 đỉnh có bậc lẻ
+// Nếu có 0 đỉnh bậc lẻ: G là Euler, không phải chỉ là Nửa Euler
 
-// Đồ thị vô hướng G là đồ thị nửa Euler:
-// + Đồ thị liên thông
-// + Có 0 hoặc 2 deg(v) % 2 != 0
-// 0 deg(v) % 2 != 0 -> Euler
-// 2 deg(v) % 2 != 0 -> Nửa Euler
-
-// Mô tả Thuật toán tìm chu trình/đường đi Euler:
-// + Điều kiện: Đồ thị là Euler hoặc Nửa Euler
-// + Đỉnh bắt đầu:
-//      - Nếu đồ thị là Euler: Đỉnh nào cũng được
-//      - Nếu đồ thị là nửa Euler: Bắt đầu tại 1 trong 2 đỉnh deg(v) % 2 != 0 (đỉnh có bậc lẻ)
-// + Đi theo các cạnh chưa dùng
-// + Xóa cạnh đã đi qua
-// + Khi bí đường thì quay lui
-// + Các đỉnh được lấy ra theo thứ tự ngược lại -> Chu trình Euler
-
+// Trường hợp 2. T == 2
+// Tìm đường đi, chu trình Euler
 // Thuật toán:
-// + Bước 1. Chọn đỉnh bắt đầu u
-// + Bước 2. push(u) vào stask
-// While !stack.empty():
-//      Lấy v trên cùng
-//      if v còn cạnh chưa dùng:
-//          Chọn đỉnh kề x
-//          xóa cạnh (v, x)
-//          push(x)
-//      else: 
-//          đưa v vào path
-//          pop stack
-// + Bước 3. Đảo ngược path
+//      1. Đưa start vào stack
+//      2. While stack != emty:
+//              u = top, v = -1
+//              for i = 0; i < n; i ++:
+//                  if(matrix[u][i]) v = i; break;
+//              if v != 0: cho v vào stack, đánh dấu cạnh u, v đã duyệt
+//              else: cho u vào chu trình, stack.pop
+//      3. Đảo ngược chu trình & xuất ra
+
+// Kiểm tra 1 đồ thị có liên thông không:
+// DFS/BFS tại 1 đỉnh, nếu có n đỉnh được duyệt -> Liên thông
 
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <algorithm>
 using namespace std;
 
-int t, n, u;
+int t, n, u, lt = 0;
+vector<vector<int>> matrix(105, vector<int>(105, 0)); // ma trận kề
+vector<bool> visited(1000, false);
+vector<int> adj[1000];
 
-// adj[u] = {v, id cạnh}
-vector<pair<int, int>> adj[1005];
 
-// used[id] = cạnh đã dùng chưa
-bool used[200005];
+void DFS(int u) {
+    visited[u] = true;
+    lt += 1;
 
-int edge_id = 0;
-
-// Thuật toán Hierholzer tìm chu trình / đường đi Euler
-vector<int> EulerCycle(int start) {
-
-    stack<int> st;
-    vector<int> path;
-
-    st.push(start);
-
-    while(!st.empty()) {
-
-        int u = st.top();
-
-        // Xóa các cạnh đã dùng khỏi danh sách kề
-        while(!adj[u].empty() &&
-              used[adj[u].back().second]) {
-
-            adj[u].pop_back();
-        }
-
-        // Nếu không còn cạnh để đi
-        if(adj[u].empty()) {
-
-            path.push_back(u);
-            st.pop();
-        }
-
-        else {
-
-            // Lấy cạnh chưa dùng
-            auto [v, id] = adj[u].back();
-            adj[u].pop_back();
-
-            // Nếu cạnh đã dùng thì bỏ qua
-            if(used[id]) continue;
-
-            // Đánh dấu cạnh đã dùng
-            used[id] = true;
-
-            st.push(v);
+    for(int v : adj[u]) {
+        if(!visited[v]) {
+            DFS(v);
         }
     }
+}
 
-    return path;
+// Tìm chu trình Euler tại 1 đỉnh u
+void EulerCycle(int start) {
+    stack<int> st;
+    vector<int> cycle;
+
+    st.push(start);
+    while(!st.empty()) {
+        int u = st.top();
+        int v = -1;
+
+        // Tìm cạnh (u, v) chưa được duyệt
+        for(int i = 0; i < n; i ++) {
+            if(matrix[u][i]) {
+                v = i;
+                break;
+            }
+        }
+
+        if(v != -1) {
+            matrix[u][v] = matrix[v][u] = 0;
+            st.push(v);
+        }
+        else {
+            cycle.push_back(u);
+            st.pop();
+        }
+    }
+    
+    reverse(cycle.begin(), cycle.end());
+    for(auto val : cycle) cout << val + 1 << " "; // Vì chạy từ 0 -> n - 1
 }
 
 int main() {
-
+    if(!freopen("CT.INP", "r", stdin));
+    if(!freopen("CT.OUT", "w", stdout));
     ios_base::sync_with_stdio(false);
     cin.tie(0), cout.tie(0);
 
-    if(!freopen("CT.INP", "r", stdin)) return 0;
-    if(!freopen("CT.OUT", "w", stdout)) return 0;
-
     cin >> t >> n;
+    if(t == 2) cin >> u;
 
-    // t = 2 -> tìm chu trình / đường đi Euler
-    if(t == 2)
-        cin >> u;
+    for(int i = 0; i < n; i ++) {
+        for(int j = 0; j < n; j ++) {
+            cin >> matrix[i][j];
 
-    // Nhập ma trận kề
-    for(int i = 1; i <= n; i++) {
-
-        for(int j = 1; j <= n; j++) {
-
-            int val;
-            cin >> val;
-
-            // Chỉ lấy nửa trên ma trận
-            // để tránh thêm cạnh 2 lần
-            if(i < j && val) {
-
-                edge_id++;
-
-                adj[i].push_back({j, edge_id});
-                adj[j].push_back({i, edge_id});
+            if(matrix[i][j]) {
+                adj[i].push_back(j);
             }
         }
     }
 
-    // Kiểm tra Euler
     if(t == 1) {
+        DFS(0);
+        if(lt == n) { // Nếu đồ thị liên thông
+            // Tìm số lượng deg chẵn
+            int chan = 0;
+            for(int i = 0; i < n; i ++) {
+                if(adj[i].size() % 2 == 0) chan += 1;
+            }
 
-        // odd = số đỉnh bậc lẻ
-        int odd = 0;
-
-        for(int i = 1; i <= n; i++) {
-
-            if(adj[i].size() % 2 != 0)
-                odd++;
+            // Nếu số lượng đỉnh có deg chẵn == n -> Euler
+            // Nếu số lượng đỉnh có deg chẵn == n - 2 -> Nửa Euler
+            // Ngược lại: Không Euler
+            if(chan == n) cout << 1;
+            else if(chan == n - 2) cout << 2;
+            else cout << 0;
         }
-
-        // odd = 0 -> Euler
-        // odd = 2 -> nửa Euler
-        // odd > 2 -> không phải Euler
-
-        if(odd == 0)
-            cout << 1;
-
-        else if(odd == 2)
-            cout << 2;
-
-        else
-            cout << 0;
+        else cout << 0;
     }
 
-    // Tìm chu trình / đường đi Euler
     else {
-
-        vector<int> result = EulerCycle(u);
-
-        // In ngược do Hierholzer backtrack
-        for(int i = result.size() - 1; i >= 0; i--) {
-            cout << result[i] << " ";
-        }
+        EulerCycle(u-1);
     }
-
-    return 0;
 }
