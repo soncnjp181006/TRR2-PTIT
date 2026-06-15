@@ -65,7 +65,7 @@ void dfs(int u) {
     for(int v : adj[u]) {
         if(!visited[v]) {
             dfs(v);
-        }
+        }i
     }
 }
 
